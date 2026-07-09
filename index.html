@@ -212,7 +212,8 @@ function buildInputs() {
     FIELDS[mode].forEach((f, i) => {
       const g = document.createElement('div');
       g.className = 'unit-group';
-      g.innerHTML = `<input type="number" inputmode="decimal" step="${f.step}" placeholder="${f.ph}" id="${axis}${i}"><span class="unit">${f.unit}</span>`;
+      const ph = (mode === 'dec' && axis === 'lon') ? 'e.g. 126.504300' : f.ph;
+      g.innerHTML = `<input type="number" inputmode="decimal" step="${f.step}" placeholder="${ph}" id="${axis}${i}"><span class="unit">${f.unit}</span>`;
       row.appendChild(g);
     });
     row.appendChild(makeToggle(axis, axis === 'lat' ? ['N','S'] : ['E','W']));
