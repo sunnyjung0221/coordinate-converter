@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>Coordinate Converter</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon.png">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #000;
+    color: #fff;
+    min-height: 100vh;
+    padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+    display: flex;
+    justify-content: center;
+  }
+  .container { width: 100%; max-width: 480px; }
+  h1 { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 6px; }
+  .subtitle { text-align: center; color: #8e8e93; font-size: 14px; margin-bottom: 20px; }
+
+  .card {
+    background: #1c1c1e;
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+
+  /* Segmented control */
+  .seg {
+    display: flex;
+    background: #2c2c2e;
+    border-radius: 10px;
+    padding: 3px;
+    margin-bottom: 18px;
+  }
+  .seg button {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: #8e8e93;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .seg button.active { background: #48484a; color: #fff; }
+
+  .field-label { font-size: 13px; color: #8e8e93; font-weight: 600; margin-bottom: 8px; display: block; }
+  .row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .row .unit-group { flex: 1; position: relative; }
+  input[type=number], input[type=text] {
+    width: 100%;
+    background: #2c2c2e;
+    border: 1px solid #3a3a3c;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 17px;
+    padding: 12px 30px 12px 12px;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input:focus { border-color: #0a84ff; }
+  .unit {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #8e8e93;
+    font-size: 15px;
+    pointer-events: none;
+  }
+  button.hemi {
+    background: #2c2c2e;
+    border: 1px solid #3a3a3c;
+    border-radius: 10px;
+    color: #0a84ff;
+    font-size: 17px;
+    font-weight: 700;
+    padding: 12px 0;
+    outline: none;
+    text-align: center;
+    width: 58px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  button.hemi:active { background: #3a3a3c; }
+
+  .hint {
+    background: #2c2c2e;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #8e8e93;
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+  .hint .pos { color: #0a84ff; font-weight: 700; }
+  .hint .neg { color: #ff453a; font-weight: 700; }
+
+  .convert-btn {
+    width: 100%;
+    background: #0a84ff;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 17px;
+    font-weight: 700;
+    padding: 14px 0;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .convert-btn:active { opacity: .8; }
+
+  .error { color: #ff453a; font-size: 13px; margin-top: 10px; text-align: center; display: none; }
+
+  /* Results */
+  .result-title { font-size: 13px; color: #8e8e93; font-weight: 600; margin-bottom: 4px; }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #2c2c2e;
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-fmt { font-size: 13px; color: #8e8e93; width: 70px; flex-shrink: 0; }
+  .result-val { font-size: 15px; font-variant-numeric: tabular-nums; flex: 1; text-align: right; margin-right: 10px; word-break: break-all; }
+  .copy-btn {
+    background: #2c2c2e;
+    border: none;
+    color: #0a84ff;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .copy-btn:active { opacity: .7; }
+  #results { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1 style="margin-bottom:20px">Coordinate Converter</h1>
+
+  <div class="card">
+    <div class="seg" id="seg">
+      <button data-mode="dec" class="active">Decimal</button>
+      <button data-mode="dm">DM</button>
+      <button data-mode="dms">DMS</button>
+    </div>
+
+    <label class="field-label">Latitude</label>
+    <div class="row" id="latRow"></div>
+
+    <label class="field-label">Longitude</label>
+    <div class="row" id="lonRow"></div>
+
+    <div class="hint" style="text-align:center">
+      <span class="pos">N</span> + , <span class="neg">S</span> − &nbsp;/&nbsp; <span class="pos">E</span> + , <span class="neg">W</span> −
+    </div>
+
+    <button class="convert-btn" id="convertBtn">Convert</button>
+    <div class="error" id="err">Invalid coordinate values</div>
+  </div>
+
+  <div class="card" id="results">
+    <div class="result-title">Latitude</div>
+    <div id="latResults"></div>
+    <div class="result-title" style="margin-top:14px">Longitude</div>
+    <div id="lonResults"></div>
+  </div>
+</div>
+
+<script>
+let mode = 'dec';
+
+const FIELDS = {
+  dec: [{ph:'e.g. 37.504300', unit:'°', step:'any'}],
+  dm:  [{ph:'Deg', unit:'°', step:'1'}, {ph:'Min', unit:"'", step:'any'}],
+  dms: [{ph:'Deg', unit:'°', step:'1'}, {ph:'Min', unit:"'", step:'1'}, {ph:'Sec', unit:'"', step:'any'}]
+};
+
+function makeToggle(axis, opts) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'hemi';
+  b.id = axis + 'Hemi';
+  const paint = v => {
+    b.dataset.v = v;
+    b.textContent = v;
+    b.style.color = (v === 'S' || v === 'W') ? '#ff453a' : '#0a84ff';
+  };
+  paint(opts[0]);
+  b.addEventListener('click', () => paint(b.dataset.v === opts[0] ? opts[1] : opts[0]));
+  return b;
+}
+
+function buildInputs() {
+  ['lat','lon'].forEach(axis => {
+    const row = document.getElementById(axis + 'Row');
+    row.innerHTML = '';
+    FIELDS[mode].forEach((f, i) => {
+      const g = document.createElement('div');
+      g.className = 'unit-group';
+      g.innerHTML = `<input type="number" inputmode="decimal" step="${f.step}" placeholder="${f.ph}" id="${axis}${i}"><span class="unit">${f.unit}</span>`;
+      row.appendChild(g);
+    });
+    row.appendChild(makeToggle(axis, axis === 'lat' ? ['N','S'] : ['E','W']));
+    row.querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') convert(); });
+    });
+  });
+}
+
+document.getElementById('seg').addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  mode = btn.dataset.mode;
+  document.querySelectorAll('#seg button').forEach(b => b.classList.toggle('active', b === btn));
+  buildInputs();
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('err').style.display = 'none';
+});
+
+function readAxis(axis) {
+  const vals = FIELDS[mode].map((_, i) => {
+    const v = document.getElementById(axis + i).value.trim();
+    return v === '' ? null : parseFloat(v);
+  });
+  if (vals.some(v => v === null || isNaN(v))) return null;
+
+  let dec;
+  if (mode === 'dec') {
+    dec = Math.abs(vals[0]);
+  } else if (mode === 'dm') {
+    if (vals[1] < 0 || vals[1] >= 60) return NaN;
+    dec = Math.abs(vals[0]) + vals[1] / 60;
+  } else {
+    if (vals[1] < 0 || vals[1] >= 60 || vals[2] < 0 || vals[2] >= 60) return NaN;
+    dec = Math.abs(vals[0]) + vals[1] / 60 + vals[2] / 3600;
+  }
+  const neg = vals[0] < 0 || Object.is(vals[0], -0);
+  const sign = neg ? -1 : hemiSign(axis);
+  return dec * sign;
+}
+
+function hemiSign(axis) {
+  const v = document.getElementById(axis + 'Hemi').dataset.v;
+  return (v === 'N' || v === 'E' || v === '+') ? 1 : -1;
+}
+
+function fmtAll(dec, axis) {
+  const hemi = axis === 'lat' ? (dec >= 0 ? 'N' : 'S') : (dec >= 0 ? 'E' : 'W');
+  const a = Math.abs(dec);
+  const d = Math.floor(a);
+  const mFull = (a - d) * 60;
+  let m = Math.floor(mFull);
+  let s = (mFull - m) * 60;
+  let sR = parseFloat(s.toFixed(2));
+  let mR = m, dR = d;
+  if (sR >= 60) { sR = 0; mR += 1; }
+  if (mR >= 60) { mR = 0; dR += 1; }
+  let mFullR = parseFloat(mFull.toFixed(4));
+  let dDm = d;
+  if (mFullR >= 60) { mFullR = 0; dDm += 1; }
+  return {
+    dec: `${dec.toFixed(6)}°`,
+    dm:  `${dDm}° ${mFullR.toFixed(4)}' ${hemi}`,
+    dms: `${dR}° ${mR}' ${sR.toFixed(2)}" ${hemi}`
+  };
+}
+
+function renderAxis(dec, axis) {
+  const f = fmtAll(dec, axis);
+  const rows = [['Decimal', f.dec], ['DM', f.dm], ['DMS', f.dms]];
+  const el = document.getElementById(axis + 'Results');
+  el.innerHTML = rows.map(([k, v]) =>
+    `<div class="result-row"><span class="result-fmt">${k}</span><span class="result-val">${v}</span><button class="copy-btn" data-v="${v}">Copy</button></div>`
+  ).join('');
+}
+
+function convert() {
+  const err = document.getElementById('err');
+  const lat = readAxis('lat');
+  const lon = readAxis('lon');
+  const bad = lat === null || lon === null || isNaN(lat) || isNaN(lon) ||
+              Math.abs(lat) > 90 || Math.abs(lon) > 180;
+  if (bad) {
+    err.style.display = 'block';
+    document.getElementById('results').style.display = 'none';
+    return;
+  }
+  err.style.display = 'none';
+  renderAxis(lat, 'lat');
+  renderAxis(lon, 'lon');
+  document.getElementById('results').style.display = 'block';
+}
+
+document.getElementById('convertBtn').addEventListener('click', convert);
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.copy-btn');
+  if (!btn) return;
+  const txt = btn.dataset.v;
+  const done = () => { btn.textContent = 'Copied'; setTimeout(() => btn.textContent = 'Copy', 1200); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(done).catch(() => fallbackCopy(txt, done));
+  } else fallbackCopy(txt, done);
+});
+
+function fallbackCopy(txt, done) {
+  const ta = document.createElement('textarea');
+  ta.value = txt;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) {}
+  document.body.removeChild(ta);
+}
+
+buildInputs();
+</script>
+</body>
+</html>
