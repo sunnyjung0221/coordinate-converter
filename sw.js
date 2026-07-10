@@ -1,8 +1,14 @@
-const CACHE = 'coordconv-v1';
-const ASSETS = ['./', './index.html', './icon.png', './apple-touch-icon.png', './manifest.json'];
+const CACHE = 'coordconv-v2';
+const ASSETS = ['./', './index.html', './apple-touch-icon.png', './manifest.json'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => Promise.all(ASSETS.map(url =>
+        c.add(url).catch(err => console.warn('skip cache', url, err))
+      )))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', e => {
@@ -14,6 +20,7 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
   e.respondWith(
     caches.match(e.request, { ignoreSearch: true }).then(cached =>
       cached ||
